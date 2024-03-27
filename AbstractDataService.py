@@ -5,5 +5,5 @@ from abc import ABC, abstractmethod
 class AbstractDataService(ABC):
 
     @abstractmethod
-    def return_data(self):
+    def get_weather_data(self):
         pass

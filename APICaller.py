@@ -17,10 +17,17 @@ class APICaller(AbstractDataService):
     def validate(self):
         return None
 
-    def call(self):
-        # Make sure all required weather variables are listed here
-        # The order of variables in hourly or daily is important to assign them correctly below
-        self.params = {
+    def get_weather_data(self, params):
+        """Calls the Open-Meteo API to get weather data.
+        
+        Args:
+            params (dict): A dictionary of parameters to pass to the API.
+            
+        Returns:
+            dict: The response from the API.
+        """
+        if params is None:
+            params = {
             "latitude": 37.7749,
             "longitude": -122.4194,
             "daily": ["temperature_2m_max", "temperature_2m_min"],
@@ -28,8 +35,22 @@ class APICaller(AbstractDataService):
             "wind_speed_unit": "mph",
             "precipitation_unit": "inch",
             "timezone": "America/Los_Angeles"
-        }
-        self.responses = self.openmeteo.weather_api(self.data_source, params=self.params)
+            }
+        
+        response = self.openmeteo.weather_api(self.data_source, params=params)[0]
 
-    def return_data(self):
-        return self.responses
+        daily = response.Daily()
+        daily_temperature_2m_max = daily.Variables(0).ValuesAsNumpy()
+        daily_temperature_2m_min = daily.Variables(1).ValuesAsNumpy()
+
+        daily_data = {"date": pd.date_range(
+            start = pd.to_datetime(daily.Time(), unit = "s", utc = True),
+            end = pd.to_datetime(daily.TimeEnd(), unit = "s", utc = True),
+            freq = pd.Timedelta(seconds = daily.Interval()),
+            inclusive = "left"
+        )}
+        daily_data["temperature_2m_max"] = daily_temperature_2m_max
+        daily_data["temperature_2m_min"] = daily_temperature_2m_min
+
+        daily_dataframe = pd.DataFrame(data = daily_data)
+        return daily_dataframe
