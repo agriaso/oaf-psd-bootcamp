@@ -19,6 +19,15 @@ if __name__ == "__main__":
 
     #call api endpoint for data
     handler.service.connect()
+    data = handler.service.get_weather_data(params)
+
+    #check if the weather is good
+    if (handler.is_good_weather(data)):
+        print("The weather is good!")
+    else:
+        print("Where's the sun?")
 
     #plot the data
-    handler.plot_data(handler.service.get_weather_data(params))
+    handler.plot_data(data)
+    
+    
