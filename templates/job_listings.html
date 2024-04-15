@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Jobs in SF Government</title>
+</head>
+<body>
+
+<header>
+    <h1>Jobs in SF Government</h1>
+</header>
+
+<table border="1">
+    <tr>
+        <th>Department</th>
+        <th>Ref Number</th>
+        <th>Appt Type</th>
+        <th>Job Class</th>
+        <th>Job Title</th>
+        <th>Meta Identifier</th>
+        <th>Meta Direct Apply</th>
+        <th>Meta Hiring Organization</th>
+        <th>Meta Date Posted</th>
+        <th>Meta Description</th>
+        <th>Link</th>
+    </tr>
+    {% for job_listing in job_listings %}
+    <tr>
+        <td>{{ job_listing['Department'] }}</td>
+        <td>{{ job_listing['Ref Number'] }}</td>
+        <td>{{ job_listing['Appt Type'] }}</td>
+        <td>{{ job_listing['Job Class'] }}</td>
+        <td>{{ job_listing['Job Title'] }}</td>
+        <td>{{ job_listing['Meta Identifier'] }}</td>
+        <td>{{ job_listing['Meta Direct Apply'] }}</td>
+        <td>{{ job_listing['Meta Hiring Organization'] }}</td>
+        <td>{{ job_listing['Meta Date Posted'] }}</td>
+        <td>{{ job_listing['Meta Description'] }}</td>
+        <td><a href="https://careers.sf.gov/{{ job_listing['Link'] }}">{{ job_listing['Link'] }}</a></td>
+    </tr>
+    {% endfor %}
+
+</table>
+
+<footer>
+    <p>Data retrieved from: <a href="https://careers.sf.gov/">SF Careers</a></p>
+    <p>Code viewable at: <a href="https://github.com/agriaso/oaf-psd-bootcamp">Github Repo</a></p>
+    <p>Not an official website of the City and County of San Francisco. Data retrieved and analyzed by Brian Adam.</p>
+</footer>
+
+</body>
+</html>
