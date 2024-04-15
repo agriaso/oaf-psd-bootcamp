@@ -2,6 +2,7 @@ import csv
 import requests
 from bs4 import BeautifulSoup
 import re
+from update_local_data import update_local_data
 
 def split_job_info(string):
     '''
@@ -19,6 +20,7 @@ def split_job_info(string):
         - Job Title: The job title
     '''
     date_removed = re.sub(r'Apply\sby:\s[A-Za-z]+\s\d{2},\s\d{4}\s*', '', string)
+    date_removed = re.sub(r'Apply\ssoon,\scloses:\s[A-Za-z]+\s\d{2},\s\d{4}\s*', '', date_removed)
     date_removed = date_removed.replace(" ", "")
     split_data = date_removed.split('|')
     split_data[0] = "".join(filter(lambda x: x.isalpha(), split_data[0]))
@@ -32,14 +34,14 @@ def split_job_info(string):
         split_data[0] = re.sub(r'(d)', '',
                          split_data[0], count=1)
     
-    department = re.sub(r'(ays|days|Applynowclosestoday|Applyby||Oneapplicationmanyopportunities|Oneapplicationmanyopportunities)', '',
+    department = re.sub(r'(ays|days|Applysooncloses|Applynowclosestoday|Applyby||Oneapplicationmanyopportunities|Oneapplicationmanyopportunities)', '',
                          split_data[0])
 
     # Extract job details using regex patterns
     details = {}
 
     regex_patterns = {
-    'Appt_Job_JobTitle': r"(.\w+)(\d{4})-(.\w+)"
+    'Appt_Job_JobTitle': r"(.\w+)(\d{4}|\w{1}\d{3})-(.\w+)"
     }
 
     matches = re.findall(regex_patterns['Appt_Job_JobTitle'], split_data[2])
@@ -53,6 +55,15 @@ def split_job_info(string):
     return details
 
 def scrape_job_data(url):
+    """
+    Scrapes job data from the given URL
+    
+    Args:
+    url (str): The URL to scrape job data from
+    
+    Returns:
+    list: A list of dictionaries containing job data
+    """
     response = requests.get(url)
     job_data = []
 
@@ -63,38 +74,27 @@ def scrape_job_data(url):
         for div in job_divs:
             # Extracting link href
             link = div.find('a', itemprop='url')['href']
-
             # Extracting text from <p> tags
             paragraphs = div.find_all('p')
             paragraph_texts = [paragraph.text.strip() for paragraph in paragraphs]
 
             # Extracting content from <meta> tags
             meta_tags = div.find_all('meta')
-            meta_data = {
+            row_data = {
+                'Paragraphs': "".join(paragraph_texts),
                 'identifier': '',
                 'directApply': '',
                 'hiringOrganization': '',
                 'datePosted': '',
-                'description': ''
+                'description': '',
+                'Link': link
             }
             for meta_tag in meta_tags:
                 itemprop = meta_tag.get('itemprop', '')
                 content = meta_tag.get('content', '').strip()
-                if itemprop in meta_data:
-                    meta_data[itemprop] = content
+                if itemprop in row_data:
+                    row_data[itemprop] = content
 
-
-
-            # Combining all data into a single row
-            row_data = {
-                'Paragraphs': "  ".join(paragraph_texts),
-                'Meta_Identifier': meta_data['identifier'],
-                'Meta_DirectApply': meta_data['directApply'],
-                'Meta_HiringOrganization': meta_data['hiringOrganization'],
-                'Meta_DatePosted': meta_data['datePosted'],
-                'Meta_Description': meta_data['description'],
-                'Link': link
-            }
             job_data.append(row_data)
     else:
         print("Failed to retrieve the page")
@@ -160,8 +160,8 @@ def scrape_job_data2(url):
 
 def write_to_csv(data, filename):
     with open(filename, 'a', newline='', encoding='utf-8') as csvfile:
-        fieldnames = ['Paragraphs', 'Meta_Identifier', 'Meta_DirectApply', 
-                      'Meta_HiringOrganization', 'Meta_DatePosted', 'Meta_Description', 'Link']
+        fieldnames = ['Paragraphs', 'identifier', 'directApply', 
+                      'hiringOrganization', 'datePosted', 'description', 'Link']
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
 
         # Check if file is empty, if yes, write headers
@@ -205,6 +205,8 @@ if __name__ == "__main__":
 
     for page_num in range(0, num_pages + 1):
         offset_url = f'{url}?offset={page_num * 15}'
-        scraped_data = scrape_job_data2(offset_url)
-        write_to_csv2(scraped_data, 'scraped_data2.csv')
-    
+        scraped_data = scrape_job_data(offset_url)
+        write_to_csv(scraped_data, 'scraped_data.csv')
+        
+    update_local_data('scraped_data.csv', 'scraped_data_cleaned.csv')
+    print("Complete")
